@@ -1,6 +1,6 @@
 import telebot
 import sqlite3
-import parser_inst
+#import parser_inst
 
 from telebot import types
 bot = telebot.TeleBot("5616283053:AAEBZ-buT-eA0xQiFvFFhLBqA5_ftkkUR4c")
@@ -68,8 +68,8 @@ def admin_out_message(message):
         while True:
             bot.send_message(
                 message.chat.id,
-                "Список ссылочек: " + str(parser_inst.start("https://www.instagram.com/reeldakwah/reels/"))
-            )
+                "Список ссылочек: ")
+
             if message.text == "stop_bot":
                 break
     else:

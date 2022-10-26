@@ -1,6 +1,7 @@
 import configparser  # импортируем библиотеку
 import random
 import time
+import selenium
 
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
