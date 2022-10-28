@@ -5,7 +5,7 @@ import datetime
 import urllib.request
 import Reel
 import os.path
-
+import selenium
 
 from selenium import webdriver
 from selenium.webdriver.firefox.options import Options as FOptions
