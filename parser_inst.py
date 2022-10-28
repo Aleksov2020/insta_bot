@@ -3,6 +3,9 @@ import random
 import time
 import datetime
 import urllib.request
+import Reel
+import os.path
+
 
 from selenium import webdriver
 from selenium.webdriver.firefox.options import Options as FOptions
@@ -12,9 +15,6 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
-options = FOptions()
-options.binary_location = r'C:\Program Files\Mozilla Firefox\firefox.exe'
-browser = webdriver.Firefox(executable_path=r'C:\geckodriver.exe', options=options)
 
 def count_to_int(count):
     if count.__contains__('M'):
@@ -44,7 +44,7 @@ def auth(reel_page, wait):
         actions.perform()
 
 
-def start(url):
+def start(url, category):
     config = configparser.ConfigParser()
     config.read("conf.ini")
 
@@ -54,7 +54,7 @@ def start(url):
     options.binary_location = r'C:\Program Files\Mozilla Firefox\firefox.exe'
     account_page = webdriver.Firefox(executable_path=r'C:\geckodriver.exe', options=options)
     account_page.get(url)
-    wait = WebDriverWait(account_page, 10)
+    wait = WebDriverWait(account_page, 30)
 
     # получаем количество подписчиков
     count_of_subs = count_to_int(
@@ -87,10 +87,11 @@ def start(url):
             views_list.append(count_to_int(res_page.text))
 
     # Ищем посты за последние сутки
-    time_validate_reel_links = []
-    video_links = []
+    validate_reel_video_links_list = []
+    validate_reels_link_list = []
+
     reel_page = webdriver.Firefox(executable_path=r'C:\geckodriver.exe', options=options)
-    wait_reel = WebDriverWait(reel_page, 10)
+    wait_reel = WebDriverWait(reel_page, 30)
     for reel in reels_link_list:
         try:
             reel_page.get(reel)
@@ -110,7 +111,7 @@ def start(url):
         except:
             # если перекинуло на логин, то логинимся
             # TODO Высчитать через сколько примерно по времени банит инста
-            auth(reel_page, WebDriverWait(reel_page, 20))
+            auth(reel_page, WebDriverWait(reel_page, 30))
             time_ = wait_reel.until(
                 EC.presence_of_element_located((
                     By.CLASS_NAME,
@@ -124,33 +125,42 @@ def start(url):
                 ))
             )
             link_to_video = link_to_video1.find_element(By.TAG_NAME, 'video').get_attribute('src')
+
         if time_.__contains__("ЧАСОВ") or \
                 time_.__contains__("МИНУТ") or \
                 time_.__contains__("СЕКУНД") or \
                 time_.__contains__("ЧАС") or \
                 time_.__contains__("МИНУТУ") or \
                 time_.__contains__("СЕКУНДУ"):
-            time_validate_reel_links.append(reel)
-            video_links.append(link_to_video)
+            validate_reels_link_list.append(reel)
+            validate_reel_video_links_list.append(link_to_video)
+            reel_page.close()
         else:
             reel_page.close()
             break
 
-    validate_reels = []
-    for i in range(0, len(time_validate_reel_links)):
+    reels_object_list = []
+    for i in range(0, len(validate_reel_video_links_list)):
         if views_list[i] / count_of_subs > float(config["SETTINGS"]["percent"]):
-            validate_reels.append(video_links[i])
+            now = datetime.datetime.now()
+            destination = str(now.strftime("%d-%m-%Y_%H-%M-%S")) + '.mp4'
+            urllib.request.urlretrieve(validate_reel_video_links_list[i], destination)
+
+            reels_object_list.append(
+                Reel(
+                    validate_reels_link_list[i],
+                    views_list[i],
+                    category,
+                    count_of_subs,
+                    destination,
+                    os.path.exists(destination),
+                    now
+                )
+            )
 
     account_page.close()
 
-    destination_list = []
-    for val_reel in validate_reels:
-        now = datetime.datetime.now()
-        destination = str(now.strftime("%d-%m-%Y_%H-%M-%S")) + '.mp4'
-        urllib.request.urlretrieve(val_reel, destination)
-        destination_list.append(destination)
-
-    return destination_list
+    return reels_object_list
 
 
-print(start("https://www.instagram.com/juliapolskayaa/reels/"))
+print(start("https://www.instagram.com/juliapolskayaa/reels/", "check"))
